@@ -1,0 +1,19 @@
+<?php
+function poc_crypt_update_7001(&$sandbox){
+  $users = entity_load('user');
+  foreach($users as $user){
+    dpm(substr($user->field_numero_securit_social['und'][0]['value'],0,3));
+    $edit = array(
+      'field_numero_securit_social' => array(
+        'und' => array(
+          '0' =>array(
+            'value' => encrypt($user->field_numero_securit_social['und'][0]['value']),
+          )
+        )
+      )
+    );
+    if ($user->uid != 0){
+      user_save($user, $edit);
+    }
+  }
+}

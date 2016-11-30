@@ -1,0 +1,30 @@
+<?php
+
+/*
+ * Cryptage des données juste avant l'enregistrement des données en BDD
+ */
+
+function poc_crypt_user_presave(&$edit, $account, $category){
+  $crypt_numero = encrypt($edit['field_numero_securit_social']['und'][0]['value']);
+  $edit['field_numero_securit_social']['und'][0]['value'] = $crypt_numero;
+}
+
+/*
+ * Decryptage des données pour l'affichage d'un user
+ */
+
+function poc_crypt_user_load($users){
+  foreach($users as $user_load){
+    if (substr($user_load->field_numero_securit_social['und'][0]['value'],0,3) == 'a:6' ){
+      $users[$user_load->uid]->field_numero_securit_social['und'][0]['value'] = decrypt($user_load->field_numero_securit_social['und'][0]['value']);
+      $users[$user_load->uid]->field_numero_securit_social['und'][0]['safe_value'] = $users[$user_load->uid]->field_numero_securit_social['und'][0]['value'];
+    }
+  }
+}
+
+function poc_crypt_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'poc_crypt') . '/includes/views',
+  );
+}

@@ -1,0 +1,6 @@
+name = POC Encrypt
+description = Encrypt sensible data for user
+core = 7.x
+package = POC
+
+dependencies[] = encrypt
