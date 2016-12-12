@@ -5,8 +5,12 @@
  */
 
 function poc_crypt_user_presave(&$edit, $account, $category){
-  $crypt_numero = encrypt($edit['field_numero_securit_social']['und'][0]['value']);;
-  $edit['field_numero_securit_social']['und'][0]['value'] = $crypt_numero;
+  $edit_object = (object) $edit;
+  $user_wrapper = entity_metadata_wrapper('user', $edit_object);
+  //TODO : récupérer la variable de config user_list... si le module crypto_config_fields est activé, si elle est setté, bouclé dessus et faire le traitement pour chaque champs
+  $crypt_numero = encrypt($user_wrapper->field_numero_securit_social->value());
+  $user_wrapper->field_numero_securit_social->set($crypt_numero);
+  $edit = (array) $edit_object;
 }
 
 /*
@@ -15,9 +19,11 @@ function poc_crypt_user_presave(&$edit, $account, $category){
 
 function poc_crypt_user_load($users){
   foreach($users as $user_load){
-    if (substr($user_load->field_numero_securit_social['und'][0]['value'],0,3) == 'a:6' ){
-      $users[$user_load->uid]->field_numero_securit_social['und'][0]['value'] = decrypt($user_load->field_numero_securit_social['und'][0]['value']);
-      $users[$user_load->uid]->field_numero_securit_social['und'][0]['safe_value'] = $users[$user_load->uid]->field_numero_securit_social['und'][0]['value'];
+    $user_wrapper = entity_metadata_wrapper('user', $user_load);
+    //TODO : récupérer la variable de config user_list... si le module crypto_config_fields est activé, si elle est setté, bouclé dessus et faire le traitement pour chaque champs
+    if (unserialize($user_wrapper->field_numero_securit_social->value())){
+      $user_field_numero_securit_social_value = decrypt($user_wrapper->field_numero_securit_social->value());
+      $user_wrapper->field_numero_securit_social->set($user_field_numero_securit_social_value);
     }
   }
 }
