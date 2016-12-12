@@ -1,0 +1,38 @@
+<?php
+
+
+/*
+ * Form to choose what are the fields to encrypt
+ */
+
+ function crypto_config() {
+   $form = array();
+
+   $user_entity = entity_metadata_wrapper('user', NULL, array('bundle' => 'user'));
+   $user_info = $user_entity->getPropertyInfo();
+   $field_list = array();
+   foreach ($user_info as $key_field_user => $value_field_user){
+     $field_list[$key_field_user] = t(''.$value_field_user['label'].'');
+   }
+   $form['user_field_list'] = array(
+     '#title' => t('Liste de champs à chiffrer'),
+     '#type' => 'checkboxes',
+     '#description' => t('Choisir les champs à chiffrer'),
+     '#options' => $field_list,
+     '#default_value' => variable_get('user_field_list'),
+   );
+   return system_settings_form($form);
+ }
+
+function crypto_config_fields_menu(){
+  $items = array();
+  $items['admin/settings/crypto_fields'] = array(
+    'title' => 'Configure fields to encrypt on user',
+    'description' => 'Select what fields are going to be crypt or not',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crypto_config'),
+    'access arguments' => array('administer crypto fields'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}

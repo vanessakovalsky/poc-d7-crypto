@@ -10,7 +10,6 @@ function poc_crypt_views_query_alter(&$view, &$query) {
     dpm('passe dans le query alter');
     dpm($view->query);
     //$view->query->where[1]['conditions'][1]['value'] = encrypt($view->query->where[1]['conditions'][1]['value']);
-
     dpm($view->query->where[1]['conditions']);
 
     //to find out what the fieldname ist: use devel and add your desired field as

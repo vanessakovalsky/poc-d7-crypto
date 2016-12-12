@@ -1,0 +1,6 @@
+name = Crypto Config Fields
+description = Config fields to encrypt
+core = 7.x
+package = POC
+
+dependencies[] = entity

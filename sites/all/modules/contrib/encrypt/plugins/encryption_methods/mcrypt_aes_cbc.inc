@@ -127,20 +127,20 @@ function _encrypt_encryption_methods_mcrypt_aes_cbc($op, $text, $key, $options =
     $processed_text = mcrypt_generic($mcrypt, $text . str_repeat(chr($pad), $pad));
 
     // Prepend the encrypted data with the salt and IV.
-    $processed_text = $salt . $iv . $processed_text;
+    //$processed_text = $salt . $iv . $processed_text;
 
     // Generate a subkey to use as a salt for the HMAC.
     $akey = _encrypt_encryption_methods_mcrypt_aes_cbc_hkdf($hash_function, $key, $key_size, $asalt);
 
     // Calculate the HMAC and prepend it to the processed data.
     $hmac = _encrypt_encryption_methods_mcrypt_aes_cbc_hkdf($hash_function, $processed_text, $hmac_size, $akey);
-    $processed_text = $hmac . $processed_text;
+    //$processed_text = $hmac . $processed_text;
 
     // Base64 encode unless disabled.
     if (!$disable_base64) {
       $processed_text = base64_encode($processed_text);
     }
-
+drupal_set_message(base64_decode($processed_text));
     // Close the Mcrypt handle.
     mcrypt_module_close($mcrypt);
   }
