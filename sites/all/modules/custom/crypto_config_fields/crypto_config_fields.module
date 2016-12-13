@@ -48,9 +48,9 @@ function crypto_config_fields_form_alter(&$form, &$form_state, $form_id){
 }
 
 function _crypto_config_submit($form, &$form_state){
-  //On récupère la longueur max des champs cochés
   foreach($form_state['values']['user_field_list'] as $field_name => $value_field) {
     if($value_field != '0'){
+      //Get field length
       $result = db_query("SELECT data FROM field_config WHERE field_name = '".$field_name."'");
       $config = $result->fetchField();
       $config_array = unserialize($config);
@@ -64,6 +64,11 @@ function _crypto_config_submit($form, &$form_state){
       db_query("ALTER TABLE ".$field_table." ALTER ".$field_column." TYPE VARCHAR( ".$new_length." )");
       // Alter value field length in fields revision table
       db_query("ALTER TABLE ".$field_revision_table." ALTER ".$field_column." TYPE VARCHAR( ".$new_length." )");
+      //If data not already encrypt, then encrypt existing data
+
+    }
+    else{
+      //If field data is encrypt, then decrypt them and save
     }
   }
 }
