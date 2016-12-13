@@ -55,7 +55,7 @@ function _crypto_config_submit($form, &$form_state){
       $config = $result->fetchField();
       $config_array = unserialize($config);
       $length_field = $config_array['settings']['max_length'];
-      $new_length = $length_field *4;
+      $new_length = $length_field *8;
       //Prepare request for update length
       $field_table = 'field_data_' . $field_name;
       $field_revision_table = 'field_revision_' . $field_name;
