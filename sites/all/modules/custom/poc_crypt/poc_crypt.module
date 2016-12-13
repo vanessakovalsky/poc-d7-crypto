@@ -42,9 +42,26 @@ function poc_crypt_user_load($users){
   }
 }
 
-// function poc_crypt_views_api() {
-//   return array(
-//     'api' => 3,
-//     'path' => drupal_get_path('module', 'poc_crypt') . '/includes/views',
-//   );
-// }
+function poc_crypt_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'poc_crypt') . '/includes/views',
+  );
+}
+
+function crypt_user_find_by_field($table_field_value){
+  foreach($table_field_value as $key_field_value => $value_field_value){
+    $query_results_table = db_query("SELECT ".$key_field_value."_value, entity_id FROM field_data_".$key_field_value."")->fetchAll();
+    $table_all_values = array();
+    foreach($query_results_table as $column => $value_column){
+      $table_all_values[$value_column->entity_id] = decrypt($value_column->field_numero_securit_social_value);
+    }
+    $uid_in_table = array_search($value_field_value, $table_all_values);
+    if($uid_in_table){
+      return $uid_in_table;
+    }
+    else{
+      return FALSE;
+    }
+  }
+}
