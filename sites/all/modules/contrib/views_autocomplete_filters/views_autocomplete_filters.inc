@@ -46,8 +46,8 @@ function views_autocomplete_filter($filter_name, $view_name, $display_name, $vie
   $expose_options = $filter['expose'];
 
   // Do not filter if the string length is less that minimum characters setting.
-  if (drupal_strlen(trim($string)) < $expose_options['autocomplete_min_chars']) {
-    $matches[''] = '<div class="reference-autocomplete">' . t('The %string should have at least %min_chars characters.', array('%string' => $string, '%min_chars' => $expose_options['autocomplete_min_chars'])) . '</div>';
+  if (isset($expose_options['autocomplete_min_chars']) && drupal_strlen(trim($string)) < $expose_options['autocomplete_min_chars']) {
+    $matches[''] = '<div class="reference-autocomplete reference-autocomplete--min-char">' . t('Search text should have at least %min_chars characters.', array('%min_chars' => $expose_options['autocomplete_min_chars'])) . '</div>';
     return drupal_json_output($matches);
   }
 
@@ -126,6 +126,11 @@ function views_autocomplete_filter($filter_name, $view_name, $display_name, $vie
   $view->execute($view->current_display);
   $view->post_execute();
 
+  // Render it seems required by Search API Views integration.
+  if ($view->base_field == 'search_api_id' && stristr($view->base_table, 'search_api_index_')) {
+    $view->render();
+  }
+
   // Render field on each row and fill matches array.
   $use_raw_suggestion = !empty($expose_options['autocomplete_raw_suggestion']);
   $use_raw_dropdown = !empty($expose_options['autocomplete_raw_dropdown']);
@@ -154,15 +159,22 @@ function views_autocomplete_filter($filter_name, $view_name, $display_name, $vie
       }
 
       foreach ($raw_field as $delta => $item) {
-        if (isset($item['value']) && strstr(drupal_strtolower($item['value']), drupal_strtolower($string))) {
-          $dropdown = $use_raw_dropdown ? check_plain($item['value']) : $rendered_field;
-          if ($dropdown != '') {
-            $suggestion = $use_raw_suggestion ? check_plain($item['value']) : $rendered_field;
-            $suggestion = decode_entities($suggestion);
-
-            // Add a class wrapper for a few required CSS overrides.
-            $matches[$suggestion] = '<div class="reference-autocomplete">' . $dropdown . '</div>';
+        $dropdown = '';
+        // Use transliteration if available.
+        if (function_exists('transliteration_get')) {
+          if (isset($item['value']) && strstr(transliteration_get(decode_entities(drupal_strtolower($item['value']))), transliteration_get(drupal_strtolower($string)))) {
+            $dropdown = $use_raw_dropdown ? check_plain($item['value']) : $rendered_field;
           }
+        }
+        elseif (isset($item['value']) && strstr(drupal_strtolower($item['value']), drupal_strtolower($string))) {
+          $dropdown = $use_raw_dropdown ? check_plain($item['value']) : $rendered_field;
+        }
+        if ($dropdown != '') {
+          $suggestion = $use_raw_suggestion ? check_plain($item['value']) : $rendered_field;
+          $suggestion = decode_entities($suggestion);
+
+          // Add a class wrapper for a few required CSS overrides.
+          $matches[$suggestion] = '<div class="reference-autocomplete">' . $dropdown . '</div>';
         }
       }
     }
@@ -170,8 +182,12 @@ function views_autocomplete_filter($filter_name, $view_name, $display_name, $vie
   unset($view->row_index);
 
   if (empty($matches)) {
-    $matches[''] = '<div class="reference-autocomplete">' . t('The %string return no results. Please try something else.', array('%string' => $string)) . '</div>';
+    $matches[''] = '<div class="reference-autocomplete reference-autocomplete--empty-result">' . t('%string returned no results. Please try something else.', array('%string' => $string)) . '</div>';
   }
+
+  // Allow modules to alter the calculated matches or programmatically change
+  // empty results messages.
+  drupal_alter('views_autocomplete_filter_matches', $matches, $string, $view);
 
   return drupal_json_output($matches);
 }

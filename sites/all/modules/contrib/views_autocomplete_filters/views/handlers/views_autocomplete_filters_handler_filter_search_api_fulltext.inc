@@ -10,7 +10,7 @@
  *
  * @ingroup views_filter_handlers
  */
-class views_autocomplete_filters_handler_filter_string extends views_handler_filter_string {
+class views_autocomplete_filters_handler_filter_search_api_fulltext extends SearchApiViewsHandlerFilterFulltext {
   // Exposed filter options.
   var $always_multiple = TRUE;
 
