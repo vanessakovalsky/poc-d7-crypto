@@ -65,10 +65,35 @@ function _crypto_config_submit($form, &$form_state){
       // Alter value field length in fields revision table
       db_query("ALTER TABLE ".$field_revision_table." ALTER ".$field_column." TYPE VARCHAR( ".$new_length." )");
       //If data not already encrypt, then encrypt existing data
-
+      $query_entity = new EntityFieldQuery();
+      $query_entity->entityCondition('entity_type', 'user')
+                  ->fieldCondition($field_name, 'value', 'NULL', '!=');
+      $result_entity = $query_entity->execute();
+      $users_entity = user_load_multiple(array_keys($result_entity['user']));
+      foreach($users_entity as $user_to_update){
+        $user_to_update_wrapper = entity_metadata_wrapper('user', $user_to_update, array('bundle' => 'user'));
+        if (!(unserialize($user_to_update_wrapper->$field_name->value()))){
+          $user_field_value = encrypt($user_to_update_wrapper->$field_name->value());
+          $user_to_update_wrapper->$field_name->set($user_field_value);
+          $user_to_update_wrapper->save();
+        }
+      }
     }
     else{
       //If field data is encrypt, then decrypt them and save
+      $query_entity = new EntityFieldQuery();
+      $query_entity->entityCondition('entity_type', 'user')
+                  ->fieldCondition($field_name, 'value', 'NULL', '!=');
+      $result_entity = $query_entity->execute();
+      $users_entity = user_load_multiple(array_keys($result_entity['user']));
+      foreach($users_entity as $user_to_update){
+        $user_to_update_wrapper = entity_metadata_wrapper('user', $user_to_update, array('bundle' => 'user'));
+        if (unserialize($user_to_update_wrapper->$field_name->value())){
+          $user_field_value = decrypt($user_to_update_wrapper->$field_name->value());
+          $user_to_update_wrapper->$field_name->set($user_field_value);
+          $user_to_update_wrapper->save();
+        }
+      }
     }
   }
 }

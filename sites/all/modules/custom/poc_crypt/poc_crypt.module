@@ -11,8 +11,10 @@ function poc_crypt_user_presave(&$edit, $account, $category){
     if($user_fields_list = variable_get('user_field_list')){
       foreach($user_fields_list as $key_field => $value_field){
         if($value_field != '0'){
-          $crypt_value = encrypt($user_wrapper->$key_field->value());
-          $user_wrapper->$key_field->set($crypt_value);
+          if (!(unserialize($user_wrapper->$key_field->value()))){
+            $crypt_value = encrypt($user_wrapper->$key_field->value());
+            $user_wrapper->$key_field->set($crypt_value);
+          }
         }
       }
     }
