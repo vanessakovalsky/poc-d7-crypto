@@ -5,6 +5,8 @@
  * Plugin definition for the FilePassword key provider.
  */
 
+use \Defuse\Crypto\Crypto;
+
 define('ENCRYPT_FILEPASSWORD_NAME', 'encrypt_password_key.key');
 
 $plugin = crypto_keystore_encrypt_key_providers();
@@ -34,18 +36,13 @@ function crypto_keystore_get_file_key($settings) {
     return;
   }
 
-  $key = file_get_contents($file_name);
-  // TODO : if password, decrypt key
-  switch ($settings['method']) {
-    case 'file_contents':
+  $key_crypt = file_get_contents($file_name);
+
+  if($settings['password']){
+    if (real_aes_load_library()) {
+      $key = Crypto::decrypt($key_crypt, $settings['password']);
       return $key;
-
-    case 'base64_decode':
-      return base64_decode($key);
-
-    // This only exists for backward compatibility.
-    case 'md5':
-      return md5($key);
+    }
   }
 }
 
@@ -54,16 +51,6 @@ function crypto_keystore_get_file_key($settings) {
  */
 function crypto_keystore_file_key_settings_form($defaults) {
   $form = array();
-
-  $options = array(
-    'file_contents' => t('File contents'),
-    'base64_decode' => t('Base64 decode'),
-  );
-  // Add the MD5 option, if it is already being used, but flag it as
-  // not recommended.
-  if ($defaults['method'] == 'md5') {
-    $options['md5'] = t('MD5 (not recommended)');
-  }
 
   $form['path'] = array(
     '#type' => 'textfield',
@@ -78,18 +65,13 @@ function crypto_keystore_file_key_settings_form($defaults) {
     '#field_suffix' => '/' . ENCRYPT_FILEPASSWORD_NAME,
   );
 
-  $form['method'] = array(
-    '#type' => 'select',
-    '#title' => t('Method'),
-    '#description' => t('Choose an optional modification to the file contents.'),
-    '#options' => $options,
-    '#default_value' => isset($defaults['method']) ? $defaults['method'] : 'file_contents',
-  );
-
   $form['password'] = array(
-  '#type' => 'password',
-  '#title' => t('Key Password'),
-);
+    '#type' => 'password',
+    '#title' => t('Key Password'),
+    '#description' => t('Password to encrypt the key, must be 16 characters'),
+    '#required' => TRUE,
+    '#element_validate' => array('crypto_keystore_file_key_password_validate'),
+  );
 
   return $form;
 }
@@ -120,11 +102,22 @@ function crypto_keystore_file_key_path_validate($element, &$form_state, $form) {
 }
 
 /**
+ * Validate callback for the settings form
+ */
+
+function crypto_keystore_file_key_password_validate($element, &$form_state, $form){
+  $password = $element['#value'];
+  if(strlen($password) != 16){
+    form_error($element, t('The password length must be exactly 16 characters'));
+  }
+}
+
+/**
  * Submit callback for the settings form.
  */
 function crypto_keystore_file_key_settings_form_submit($form, $form_state) {
   $directory = $form_state['values']['encrypt_key_providers_filepassword_settings']['path'];
-  $file = $directory . '/' . ENCRYPT_FILE_NAME;
+  $file = $directory . '/' . ENCRYPT_FILEPASSWORD_NAME;
 
   // Check for contents of file; do not write over the key.
   if (file_exists($file) && file_get_contents($file)) {
@@ -133,14 +126,16 @@ function crypto_keystore_file_key_settings_form_submit($form, $form_state) {
 
   // Create a default key.
   $open_file = fopen($file, 'wb');
-  $key = drupal_random_bytes(16);
 
-  //TODO use password to encrypt key
+  $key_clear = drupal_random_bytes(16);
 
-  // Base64 encode the key, if required.
-  if ($form_state['values']['encrypt_key_providers_filepassword_settings']['method'] == 'base64_decode') {
-    $key = base64_encode($key);
+  //Using password to encrypt the key and save it to file
+  if($form_state['values']['encrypt_key_providers_filepassword_settings']['password']){
+    if (real_aes_load_library()) {
+      $key = Crypto::encrypt($key_clear, $form_state['values']['encrypt_key_providers_filepassword_settings']['password']);
+    }
   }
+
   fwrite($open_file, $key);
   fclose($open_file);
 
